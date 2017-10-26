@@ -1,0 +1,307 @@
+---
+title: "Diamonds"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(dplyr)
+data(diamonds)
+
+summary(diamonds)
+str(diamonds)
+```
+
+
+```{r cars}
+#Diamonds at certain prices
+subset(diamonds, price<500)
+subset(diamonds, price<250)
+subset(diamonds, price>=15000)
+```
+
+```{r}
+#Exploring the largest peak area in the price histogram
+ggplot(diamonds, aes(x=price)) +geom_histogram(color='black', binwidth=10)+
+  coord_cartesian(xlim = c(250,925))
+```
+
+
+```{r}
+#Creating histogram of diamond prices by cut
+ggplot(data = diamonds)+
+  geom_histogram(aes(x = price)) + 
+  facet_wrap(~ cut)
+```
+
+
+
+```{r}
+#Getting Median stats by cut
+aggregate(. ~cut, data=diamonds, FUN=median)
+```
+
+```{r}
+#Getting Highest price diamond by cut 
+aggregate(. ~cut, data=diamonds, FUN=max)
+```
+
+
+
+```{r}
+#The previous plot showed the distributions as different so freeing the scales
+#Fyi using this bin width on purpose
+ggplot(data = diamonds)+
+  geom_histogram(aes(x = price)) + 
+  facet_wrap(~ cut, scales='free')
+```
+
+```{r}
+#Looking at the price per carrat with log10
+ggplot(data = diamonds)+
+  geom_histogram(aes(x = price/carat)) + 
+  facet_wrap(~ cut, scales='free')+
+  scale_x_log10()
+```
+
+
+
+```{r}
+#Creating a box plot for price based on cut
+ggplot(diamonds, aes(x=cut, y=price, fill=cut))+
+  geom_boxplot()+
+  coord_cartesian(ylim = c(0,20000))
+```
+
+```{r}
+#Summarizing price data by color
+by(diamonds$price, diamonds$color, summary)
+```
+
+
+
+```{r}
+#Getting individual IQR's based on certain color
+IQR(subset(diamonds, color=='D')$price)
+IQR(subset(diamonds, color=='J')$price)
+```
+
+```{r}
+#Getting price IQR by color
+by(diamonds$price,diamonds$color,IQR)
+```
+
+
+
+```{r}
+#Looking at price per carat of diamonds across colors
+ggplot(diamonds, aes(x=color, y=price/carat, fill=color))+
+  geom_boxplot()+
+  coord_cartesian(ylim = c(1000,7000))
+```
+
+```{r}
+#Investigating carats using a frequency polygon
+#Fyi using these limits on purpose
+ggplot(diamonds, aes(x=carat))+
+  geom_freqpoly(binwidth=0.1)+
+  scale_x_continuous(limits=c(0,6), breaks=seq(0,6,0.25))+
+  scale_y_continuous(limits=c(0,11000), breaks=seq(0,11000,1000))
+```
+
+
+
+
+```{r}
+ggplot(diamonds, aes(x=x, y=price))+geom_point(color="blue", alpha=1/20)
+```
+
+```{r}
+#Calculating correlations
+with(diamonds, cor.test(x, price))
+with(diamonds, cor.test(y, price))
+with(diamonds, cor.test(z, price))
+```
+
+
+```{r}
+ggplot(diamonds, aes(x=depth, y=price)) +geom_point(color='blue', alpha=1/100)+
+  scale_x_continuous(breaks = seq(0,80,2))
+```
+
+
+```{r}
+with(diamonds, cor.test(x=depth, y=price))
+```
+
+
+```{r}
+ggplot(diamonds, aes(x=carat, y=price))+geom_point(color='blue', alpha=1/20)+
+  scale_x_continuous(limits = c(0, quantile(diamonds$carat, 0.99)))+
+  scale_y_continuous(limits = c(0, quantile(diamonds$price, 0.99)))+
+  stat_smooth(method = 'lm')
+```
+
+
+
+
+```{r}
+ggplot(diamonds, aes(x= x*y*z, y=price)) +geom_point(alpha = 1/20, color='blue')
+```
+
+
+```{r}
+#Calculating volume with variables x, y,z
+#Getting correlation but not including volume of 0 or 800+
+diamonds$volume <- diamonds$x * diamonds$y * diamonds$z
+with(subset(diamonds,diamonds$volume>0 & diamonds$volume<800), cor.test(volume, price))
+```
+
+
+
+
+```{r}
+ggplot(subset(diamonds,diamonds$volume>0 & diamonds$volume<800), aes(x= x*y*z, y=price)) +
+  geom_point(alpha = 1/50, color='blue')+
+  geom_smooth(method = 'lm', color='red')
+
+
+```
+
+
+
+```{r}
+diamondsByClarity <- diamonds %>%
+  group_by(clarity) %>%
+  summarise(mean_price = mean(price),
+            median_price = median(price),
+            min_price = min(price),
+            max_price = max(price),
+            n = n()) %>%
+arrange(clarity)
+```
+
+```{r}
+library(gridExtra)
+b1 <- ggplot(diamondsByClarity, aes(x=clarity, y=mean_price))+ geom_bar(stat='identity', color='blue')
+b2 <- ggplot(diamondsByClarity, aes(x=clarity, y=median_price))+ geom_bar(stat='identity', color='blue')
+grid.arrange(b1,b2)
+```
+
+
+```{r}
+#Plotting the histograms in each color with a facet wrap showing the different cuts
+ggplot(diamonds, aes(x=price, fill=cut))+ geom_histogram()+ facet_wrap(~color)+
+  scale_fill_brewer(type = 'qual')+
+  scale_x_log10()
+```
+
+```{r}
+#Creating a scatter plot of the table value vs price
+#Table reflects the width of hte top diamond
+ggplot(diamonds, aes(x=table, y=price)) +
+  geom_point(aes(color=cut), alpha=1/2)+
+  scale_color_brewer(type='qual')+
+  coord_cartesian(xlim=c(50,80))
+```
+
+
+```{r}
+#Adding a volume variable with transform
+diamonds <- transform(diamonds, volume = x*y*z)
+```
+
+
+```{r}
+#Plotting price (in a log10 scale) in terms of volume colored by clarity
+ggplot(subset(diamonds, volume < quantile(volume, 0.99)), aes(x=volume, y=price))+
+  geom_point(aes(color = clarity))+
+  scale_color_brewer(type = 'div')+
+  scale_y_log10()
+  
+```
+
+
+
+```{r}
+ggplot(diamonds, aes(x=cut, y=price)) +geom_jitter(aes(color=color))+
+  scale_color_brewer(type = 'div')+
+  facet_wrap(~ clarity)
+```
+
+
+
+```{r}
+cuberoot_trans = function() trans_new('cuberoot', transform = function(x) x^(1/3),
+                                      inverse = function(x) x^3)
+```
+
+
+
+```{r}
+#Looking at the carat with price on a log10 scale
+library(scales)
+ggplot(aes(x = carat, y = price, color=clarity), data = diamonds) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  scale_color_brewer(type = 'div',
+    guide = guide_legend(title = 'Clarity', reverse = T,
+    override.aes = list(alpha = 1, size = 2))) +  
+  scale_x_continuous(trans = cuberoot_trans(), limits = c(0.2, 3),
+    breaks = c(0.2, 0.5, 1, 2, 3)) + 
+  scale_y_continuous(trans = log10_trans(), limits = c(350, 15000),
+    breaks = c(350, 1000, 5000, 10000, 15000)) +
+  ggtitle('Price (log10) by Cube-Root of Carat and Clarity')
+```
+
+
+
+```{r}
+#Also looking at it colored by cut
+ggplot(aes(x = carat, y = price, color = cut), data = diamonds) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  scale_color_brewer(type = 'div',
+                     guide = guide_legend(title = 'Cut', reverse = T,
+                                          override.aes = list(alpha = 1, size = 2))) +  
+  scale_x_continuous(trans = cuberoot_trans(), limits = c(0.2, 3),
+                     breaks = c(0.2, 0.5, 1, 2, 3)) + 
+  scale_y_continuous(trans = log10_trans(), limits = c(350, 15000),
+                     breaks = c(350, 1000, 5000, 10000, 15000)) +
+  ggtitle('Price (log10) by Cube-Root of Carat and Clarity')
+```
+
+
+
+
+```{r}
+ggplot(aes(x = carat, y = price, color = color), data = diamonds) + 
+  geom_point(alpha = 0.5, size = 1, position = 'jitter') +
+  scale_color_brewer(type = 'div',
+                     guide = guide_legend(title = 'Color', reverse = FALSE,
+                                          override.aes = list(alpha = 1, size = 2))) +  
+  scale_x_continuous(trans = cuberoot_trans(), limits = c(0.2, 3),
+                     breaks = c(0.2, 0.5, 1, 2, 3)) + 
+  scale_y_continuous(trans = log10_trans(), limits = c(350, 15000),
+                     breaks = c(350, 1000, 5000, 10000, 15000)) +
+  ggtitle('Price (log10) by Cube-Root of Carat and Color')
+```
+
+
+```{r}
+#I makes it as is before using it in the regression, rather than as part of the forumula
+suppressWarnings(library(memisc))
+m1 <- lm(I(log(price)) ~ I(carat^(1/3)), data= diamonds)
+m2 <- update(m1, ~ . + carat)
+m3 <- update(m2, ~ . + cut)
+m4 <- update(m3, ~ . + color)
+m5 <- update(m4, ~ . + clarity)
+mtable(m1, m2, m3, m4, m5)
+```
+
+
+
+
+
+
